@@ -880,7 +880,18 @@ function downloadPDF(){
   // クラス変更後のレイアウト再計算を待ってからキャプチャ
   requestAnimationFrame(()=>{
     requestAnimationFrame(()=>{
-      html2canvas(target, {scale:2, backgroundColor:"#ffffff"}).then(canvas=>{
+      html2canvas(target, {
+        scale:2,
+        backgroundColor:"#ffffff",
+        // スマートフォンなど実際の画面幅が狭い端末でも、PCと同じ仮想ビューポート幅で
+        // キャプチャすることで、常にPCと同一のレイアウト・解像度のPDFを生成する。
+        windowWidth: 1400,
+        windowHeight: Math.max(target.scrollHeight + 200, 1400),
+        x: 0,
+        y: 0,
+        scrollX: 0,
+        scrollY: 0
+      }).then(canvas=>{
         if(needsCompact && !hadCompact){ target.classList.remove("quote-compact"); }
         finish(canvas);
       });
