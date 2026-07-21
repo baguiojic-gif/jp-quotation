@@ -111,6 +111,12 @@
   table.ref-table th{background:var(--maroon-light); color:var(--maroon-dark); font-weight:700;}
   table.ref-table td.num{text-align:right; white-space:nowrap;}
   .ref-note{font-size:10px;color:var(--muted); line-height:1.5; margin:-6px 0 12px;}
+  table.enroll-table{width:100%; border-collapse:collapse; font-size:10.4px; margin-bottom:8px;}
+  table.enroll-table td{border:1px solid #e6ddd7; padding:4px 6px;}
+  table.enroll-table td.month{background:var(--maroon-light); color:var(--maroon-dark); font-weight:700; width:34px; text-align:center;}
+  table.enroll-table td.dates{text-align:left;}
+  .enroll-year-label{font-size:11.5px; font-weight:700; margin:6px 0 4px; color:var(--maroon-dark);}
+  .enroll-year-label.y2027{color:#2f6b3a;}
   .calc-box{border:1px solid var(--line); border-radius:8px; padding:10px 11px; background:#fbf8f5; margin-top:6px;}
   .calc-result{font-size:11.5px; line-height:1.8; margin-top:8px; background:#fff; border:1px solid var(--line); border-radius:6px; padding:8px 10px;}
   .calc-result .line{display:flex; justify-content:space-between;}
@@ -259,6 +265,12 @@
     <div class="ref-note">
       ※4週間以下：1週=4週学費の40%／2週=65%／3週=85%（学費・寮費それぞれ独立に適用）。<br>
       ※5週間以上：4週間料金÷4×週数（線形計算・公式週単位表と一致確認済み）。
+    </div>
+
+    <h2 class="section-title" style="margin-top:6px;"><span>指定入校日</span></h2>
+    <div id="enrollmentDatesTables"></div>
+    <div class="ref-note">
+      Check in：指定入校日 14時以降 ／ Check out：卒業週土曜日 12時まで
     </div>
 
     <h2 class="section-title"><span>簡易計算機（確認用）</span></h2>
@@ -544,6 +556,23 @@ function renderRefTables(){
   el("refTables").innerHTML = html;
 }
 
+function renderEnrollmentDates(){
+  const monthLabel = (m)=>`${m}月`;
+  function tableForYear(year){
+    const table = ENROLLMENT_DATES[year];
+    const rows = [];
+    for(let m=1; m<=12; m++){
+      const days = (table[m]||[]).map(d=>`${d}日`).join("、");
+      rows.push(`<tr><td class="month">${monthLabel(m)}</td><td class="dates">${days}</td></tr>`);
+    }
+    return `
+      <div class="enroll-year-label${year===2027?" y2027":""}">${year}年の指定入校日</div>
+      <table class="enroll-table">${rows.join("")}</table>
+    `;
+  }
+  el("enrollmentDatesTables").innerHTML = tableForYear(2026) + tableForYear(2027);
+}
+
 /* ---- 簡易計算機 ---- */
 function populateCalcSelectors(){
   const campus = el("calcCampus").value;
@@ -579,6 +608,7 @@ function runCalculator(){
 (function init(){
   renderSegments();
   setRefTab("challenger");
+  renderEnrollmentDates();
   populateCalcSelectors();
   const today = new Date();
   el("issuedDate").value = today.toISOString().slice(0,10);
