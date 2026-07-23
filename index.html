@@ -329,7 +329,7 @@ const PREMIUM_COURSES = [
 ];
 const PREMIUM_ROOMS = [
   {id:"pr1", name:"1人部屋A（R1 Bal）",          price4wk:210250, xmasEligible:false},
-  {id:"pr2", name:"セミシングル（要確認）",       price4wk:181250, xmasEligible:"ambiguous"},
+  {id:"pr2", name:"セミシングル",       price4wk:181250, xmasEligible:false},
   {id:"pr3", name:"2人部屋A（R2 Bal）",          price4wk:137750, xmasEligible:true},
   {id:"pr4", name:"2人部屋B（R2 No Bal）",       price4wk:123250, xmasEligible:true},
   {id:"pr5", name:"4人部屋A（R4 Bal）",          price4wk:108750, xmasEligible:true},
@@ -550,7 +550,7 @@ function renderRefTables(){
     <div style="font-size:11px;font-weight:700;color:var(--maroon-dark);margin-bottom:5px;">部屋タイプ（4週間あたりの寮費）</div>
     <table class="ref-table">
       <tr><th>部屋タイプ</th><th>4週寮費</th><th>Xmasプロモ</th></tr>
-      ${rooms.map(r=>`<tr><td>${r.name}</td><td class="num">¥${r.price4wk.toLocaleString()}</td><td>${r.xmasEligible===true?"対象":r.xmasEligible==="ambiguous"?"要確認":"対象外"}</td></tr>`).join("")}
+      ${rooms.map(r=>`<tr><td>${r.name}</td><td class="num">¥${r.price4wk.toLocaleString()}</td><td>${r.xmasEligible===true?"対象":"対象外"}</td></tr>`).join("")}
     </table>
   `;
   el("refTables").innerHTML = html;
@@ -714,13 +714,9 @@ function renderQuote(){
     : `合計${totalWeeks}週間（12週間未満のため対象外）`;
 
   const allEligibleRooms = segments.every(seg=> findRoom(seg.campus, seg.roomId).xmasEligible===true);
-  const anyAmbiguous = segments.some(seg=> findRoom(seg.campus, seg.roomId).xmasEligible==="ambiguous");
   const anyIneligible = segments.some(seg=> findRoom(seg.campus, seg.roomId).xmasEligible===false);
-  if(anyAmbiguous){
-    addWarning("セグメントの中に「セミシングル」など、クリスマス＆ニューイヤープロモの対象部屋か料金表上で明確でない部屋タイプが含まれています。適用可否は必ず学校に確認してください。");
-  }
   if(anyIneligible && segments.length>1){
-    addWarning("セグメントの中に1人部屋（プロモ対象外）が含まれています。プロモが全期間に適用可能か、必ず学校に確認してください。");
+    addWarning("セグメントの中に1人部屋・セミシングルなど、クリスマス＆ニューイヤープロモの対象外の部屋タイプが含まれています。プロモが全期間に適用可能か、必ず学校に確認してください。");
   }
   const autoXmasEligible = startDate ? (xmasWindowOk(startDate, totalWeeks) && allEligibleRooms) : false;
   if(autoXmasEligible && !el("xmasPromoToggle").checked){ el("xmasPromoToggle").checked = true; }
