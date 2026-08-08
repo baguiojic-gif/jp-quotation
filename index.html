@@ -361,12 +361,19 @@ let WARN = [];
 function addWarning(msg){ if(!WARN.includes(msg)) WARN.push(msg); }
 
 // 学費・寮費のプロレート計算（2026年5月2日以降 1週間単位料金表と完全一致を確認済み）
-// 1〜3週間：4週間料金の40%/65%/85%　　4週間以上：4週間料金÷4×週数（線形）
-function prorate4wkBase(base4wk, weeks){
+// ルール：
+//  ・留学全体の合計週数が4週間未満（1〜3週間）の場合のみ、4週間料金の40%/65%/85%を適用
+//  ・合計週数が4週間以上の場合は、セグメントごとの週数に関わらず、常に4週間料金÷4×週数の線形計算
+//    （例：6週間の滞在中に2週間だけ別の部屋になる場合、その2週間分は単純に4週間料金の半額で計算）
+// totalWeeksを省略した場合はweeks自身を合計週数とみなす（単体計算・簡易計算機用の後方互換）
+function prorate4wkBase(base4wk, weeks, totalWeeks){
+  if(totalWeeks === undefined || totalWeeks === null) totalWeeks = weeks;
   if(base4wk == null || weeks <= 0) return {value:0, exact:true};
-  if(weeks === 1) return {value: base4wk*0.40, exact:true};
-  if(weeks === 2) return {value: base4wk*0.65, exact:true};
-  if(weeks === 3) return {value: base4wk*0.85, exact:true};
+  if(totalWeeks <= 3){
+    if(weeks === 1) return {value: base4wk*0.40, exact:true};
+    if(weeks === 2) return {value: base4wk*0.65, exact:true};
+    if(weeks === 3) return {value: base4wk*0.85, exact:true};
+  }
   const exact = weeks <= 24; // 公式週単位表で1〜24週まで検証済み
   return {value: (base4wk/4)*weeks, exact};
 }
@@ -684,7 +691,7 @@ function renderQuote(){
     if(course.fixedWeeks && course.fixedTuition != null){
       tuitionValue = course.fixedTuition;
     } else {
-      const r = prorate4wkBase(course.tuition4wk, seg.weeks);
+      const r = prorate4wkBase(course.tuition4wk, seg.weeks, totalWeeks);
       tuitionValue = r.value; tuitionExact = r.exact;
     }
     if(!tuitionExact){
@@ -692,7 +699,7 @@ function renderQuote(){
     }
     jpItems.push({label:`学費 ${segTag}`, amount:tuitionValue, note:course.name});
 
-    const dormR = prorate4wkBase(room.price4wk, seg.weeks);
+    const dormR = prorate4wkBase(room.price4wk, seg.weeks, totalWeeks);
     if(!dormR.exact){
       addWarning(`寮費${segTag}：${seg.weeks}週間は公式週単位料金表の確認範囲（24週まで）を超えているため、線形計算式で概算しています。`);
     }
