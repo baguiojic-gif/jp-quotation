@@ -679,6 +679,7 @@ function renderQuote(){
   jpItems.push({label:"入学金", amount:14500, note:"1度だけの支払い。返金不可。"});
 
   const localTextbookItems = [];
+  const textbookWeeksByCourse = {}; // key: campus+courseId -> {course, weeks}
   let totalSurcharge = 0;
 
   segWithDates.forEach((seg, idx)=>{
@@ -709,7 +710,22 @@ function renderQuote(){
       const sc = peakSurcharge(seg.startDate, seg.endDate);
       totalSurcharge += sc;
     }
-    localTextbookItems.push({label:`教科書代 ${segTag}`, amount:textbookFee(course.textbook4wk, seg.weeks), note:`${course.name}・4週間単位で計算`});
+
+    // 教科書代：同じコースが複数セグメントに分かれていても、そのコースの合計週数でまとめて計算する
+    // （例：同じコースが2週間ずつ3セグメントに分かれる場合→合計6週間として4週間単位で計算）
+    const tbKey = `${seg.campus}__${seg.courseId}`;
+    if(!textbookWeeksByCourse[tbKey]){
+      textbookWeeksByCourse[tbKey] = {course, weeks:0};
+    }
+    textbookWeeksByCourse[tbKey].weeks += seg.weeks;
+  });
+
+  Object.values(textbookWeeksByCourse).forEach(entry=>{
+    localTextbookItems.push({
+      label: `教科書代（${entry.course.name}）`,
+      amount: textbookFee(entry.course.textbook4wk, entry.weeks),
+      note: `合計${entry.weeks}週間・4週間単位で計算`
+    });
   });
 
   const ltd = longTermDiscount(totalWeeks);
