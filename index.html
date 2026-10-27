@@ -346,11 +346,12 @@ const ENROLLMENT_DATES = {
 };
 const PEAK_SEASONS = [
   {start:"2026-06-28", end:"2026-08-22", surchargePerWeek:5000},
-  {start:"2027-06-27", end:"2027-08-21", surchargePerWeek:5000},
-  // 2028・2029年：学校の正式な料金表に未記載のため、2026・2027年の実績パターン
+  // 2027年以降は週¥8,000（2026年のみ週¥5,000）
+  {start:"2027-06-27", end:"2027-08-21", surchargePerWeek:8000},
+  // 2028・2029年：学校の正式な料金表に未記載のため、2027年の期間パターン
   // （6月最終週の日曜開始～8週間後の土曜終了）から推測した仮の日付。要確認。
-  {start:"2028-06-25", end:"2028-08-19", surchargePerWeek:5000, estimated:true},
-  {start:"2029-06-24", end:"2029-08-18", surchargePerWeek:5000, estimated:true},
+  {start:"2028-06-25", end:"2028-08-19", surchargePerWeek:8000, estimated:true},
+  {start:"2029-06-24", end:"2029-08-18", surchargePerWeek:8000, estimated:true},
 ];
 
 function coursesFor(campus){ return campus==="challenger"?CHALLENGER_COURSES:PREMIUM_COURSES; }
@@ -441,7 +442,7 @@ function peakSurcharge(start, end){
     if(o.season.estimated) hasEstimatedOverlap = true;
   });
   if(hasEstimatedOverlap){
-    addWarning("2028年・2029年のピークシーズン期間（サーチャージ）は、学校の正式な料金表にまだ記載がないため、2026・2027年の実績パターン（6月最終週の日曜開始～8週間後の土曜終了）から推測した仮の日付で計算しています。学校に必ず確認してください。");
+    addWarning("2028年・2029年のピークシーズン期間（サーチャージ）は、学校の正式な料金表にまだ記載がないため、2027年の期間パターン（6月最終週の日曜開始～8週間後の土曜終了）から推測した仮の日付（週¥8,000）で計算しています。学校に必ず確認してください。");
   }
   const maxDefinedYear = Math.max(...PEAK_SEASONS.map(s=>parseDate(s.start).getFullYear()));
   if(total === 0 && (start.getFullYear() > maxDefinedYear || end.getFullYear() > maxDefinedYear)){
@@ -460,11 +461,14 @@ function peakSeasonNoteText(start, end){
     const days = Math.round((o.pe - o.ps)/(1000*60*60*24)) + 1;
     const fullWeeks = Math.ceil(days/7);
     const maxAmount = fullWeeks * o.season.surchargePerWeek;
-    let line = `${o.ps.getFullYear()}年${o.ps.getMonth()+1}/${o.ps.getDate()}〜${o.pe.getMonth()+1}/${o.pe.getDate()}（最大¥${maxAmount.toLocaleString("ja-JP")}）`;
+    let line = `${o.ps.getFullYear()}年${o.ps.getMonth()+1}/${o.ps.getDate()}〜${o.pe.getMonth()+1}/${o.pe.getDate()}（週¥${o.season.surchargePerWeek.toLocaleString("ja-JP")}／最大¥${maxAmount.toLocaleString("ja-JP")}）`;
     if(o.season.estimated) line += "※推定・要確認";
     return line;
   });
-  lines.push("※各期間と重複する滞在週数×¥5,000（全セグメント合算）");
+  const rates = [...new Set(overlaps.map(o=>o.season.surchargePerWeek))];
+  lines.push(rates.length === 1
+    ? `※各期間と重複する滞在週数×¥${rates[0].toLocaleString("ja-JP")}（全セグメント合算）`
+    : "※各期間と重複する滞在週数×上記の週単価（全セグメント合算）");
   return lines.join("<br>");
 }
 
@@ -720,7 +724,7 @@ function renderQuote(){
   const localTextbookItems = [];
   const textbookWeeksByCourse = {}; // key: campus+courseId -> {course, weeks}
   // ピークシーズンサーチャージ：セグメント毎に計算して合算すると、分割の境目でそれぞれ
-  // 週数が切り上げられ、本来の上限（シーズン期間の週数×¥5,000）を超えてしまうため、
+  // 週数が切り上げられ、本来の上限（シーズン期間の週数×週単価）を超えてしまうため、
   // 留学全体（開始日〜最終セグメント終了日）で1回だけ計算する。
   const totalSurcharge = (startDate && overallEndDate) ? peakSurcharge(startDate, overallEndDate) : 0;
 
